@@ -1,0 +1,29 @@
+{
+  "name": "imperiialclaw",
+  "version": "1.0.0",
+  "description": "Local AI agent with Telegram interface",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "better-sqlite3": "^11.5.0",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.7.0",
+    "grammy": "^1.30.0",
+    "groq-sdk": "^0.7.0",
+    "openai": "^4.61.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.16.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.4"
+  }
+}
