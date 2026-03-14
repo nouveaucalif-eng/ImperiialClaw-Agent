@@ -15,15 +15,17 @@ bot.use(async (ctx, next) => {
 });
 
 bot.on('message:text', async (ctx) => {
-  const userId = ctx.from.id.toString();
+  const userId = ctx.from?.id.toString();
   const text = ctx.message.text;
+
+  if (!userId) return;
 
   try {
     // Show typing status
     await ctx.replyWithChatAction('typing');
     
     const response = await runAgent(userId, text);
-    await ctx.reply(response);
+    await ctx.reply(response || "Je n'ai pas pu générer de réponse.");
   } catch (error) {
     console.error('❌ Bot error:', error);
     await ctx.reply('Désolé, j’ai rencontré une erreur lors du traitement de votre demande.');
