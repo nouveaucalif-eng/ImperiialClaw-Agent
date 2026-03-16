@@ -75,17 +75,17 @@ export async function createPowerPoint(slides: SlideData[], filename: string, th
     } else {
         // --- CONTENT SLIDE (Complex Layout) ---
         
-        // 1. Title with Underline/Accent
+        // 1. Title with Underline/Accent (Fixed size & Shrink)
         s.addText(slide.title, {
-            x: 0.5, y: 0.4, w: '60%', h: 0.6,
-            fontSize: 32, bold: true, color: config.titleColor,
-            fontFace: config.font
+            x: 0.5, y: 0.4, w: '90%', h: 0.7,
+            fontSize: 28, bold: true, color: config.titleColor,
+            fontFace: config.font, shrinkText: true
         });
-        s.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.0, w: 3, h: 0.05, fill: { color: config.accent } });
+        s.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.1, w: 2, h: 0.04, fill: { color: config.accent } });
 
-        // 2. Image Integration (fetch from reliable source)
+        // 2. Image Integration (Switching to a more PPT-friendly source)
         const keyword = slide.title.split(' ').pop()?.toLowerCase() || 'abstract';
-        const imgUrl = slide.imageUrl || `https://loremflickr.com/800/600/${encodeURIComponent(keyword)}`;
+        const imgUrl = slide.imageUrl || `https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&w=800&q=80`; // Reliable fallback
         
         // Alternating Layout: Image Left or Right
         const isImageRight = idx % 2 === 0;
@@ -94,30 +94,32 @@ export async function createPowerPoint(slides: SlideData[], filename: string, th
             if (isImageRight) {
                 // Text Left, Image Right
                 s.addText(formatContent(slide.content), {
-                    x: 0.5, y: 1.4, w: '45%', h: '60%',
-                    fontSize: 18, color: config.textColor,
-                    fontFace: config.font, valign: 'top', lineSpacing: 28
+                    x: 0.5, y: 1.4, w: '42%', h: '65%',
+                    fontSize: 14, color: config.textColor,
+                    fontFace: config.font, valign: 'top', lineSpacing: 22,
+                    shrinkText: true
                 });
-                s.addImage({ path: imgUrl, x: 5.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
-                s.addShape(pres.ShapeType.rect, { x: 5.7, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
+                s.addImage({ path: imgUrl, x: 5.2, y: 1.4, w: 4.3, h: 3.2, rounded: true });
+                s.addShape(pres.ShapeType.rect, { x: 5.4, y: 1.6, w: 4.3, h: 3.2, fill: { color: config.accent, transparency: 80 }, z: -1 });
             } else {
                 // Image Left, Text Right
-                s.addImage({ path: imgUrl, x: 0.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
-                s.addShape(pres.ShapeType.rect, { x: 0.3, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
+                s.addImage({ path: imgUrl, x: 0.5, y: 1.4, w: 4.3, h: 3.2, rounded: true });
+                s.addShape(pres.ShapeType.rect, { x: 0.3, y: 1.6, w: 4.3, h: 3.2, fill: { color: config.accent, transparency: 80 }, z: -1 });
                 
                 s.addText(formatContent(slide.content), {
-                    x: 5.0, y: 1.4, w: '45%', h: '60%',
-                    fontSize: 18, color: config.textColor,
-                    fontFace: config.font, valign: 'top', lineSpacing: 28
+                    x: 5.3, y: 1.4, w: '42%', h: '65%',
+                    fontSize: 14, color: config.textColor,
+                    fontFace: config.font, valign: 'top', lineSpacing: 22,
+                    shrinkText: true
                 });
             }
         } catch (imgErr) {
             console.error(`⚠️ Image failed for slide ${idx}:`, imgErr);
-            // Fallback: full width text
             s.addText(formatContent(slide.content), {
-                x: 0.5, y: 1.4, w: '90%', h: '60%',
-                fontSize: 18, color: config.textColor,
-                fontFace: config.font, valign: 'top', lineSpacing: 28
+                x: 0.5, y: 1.4, w: '90%', h: '65%',
+                fontSize: 16, color: config.textColor,
+                fontFace: config.font, valign: 'top', lineSpacing: 24,
+                shrinkText: true
             });
         }
     }
