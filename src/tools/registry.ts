@@ -84,8 +84,8 @@ registerTool({
           filename: { type: 'string', description: 'Nom du fichier (ex: presentation_musset)' },
           theme: { 
             type: 'string', 
-            enum: ['modern', 'dark', 'corporate'], 
-            description: 'Le style visuel de la présentation (modern, dark ou corporate)' 
+            enum: ['zenith', 'nova', 'imperial'], 
+            description: 'Le style visuel premium (zenith: Dark Tech, nova: Modern Clean, imperial: Elegant Gold)' 
           },
           slides: {
             type: 'array',
