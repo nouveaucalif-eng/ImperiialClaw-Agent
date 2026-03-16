@@ -4,9 +4,10 @@ import { env } from '../config/index.js';
 
 export interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool';
-  content: string;
+  content: string | null;
   tool_call_id?: string;
   name?: string;
+  tool_calls?: any[];
 }
 
 export interface ToolDefinition {

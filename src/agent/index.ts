@@ -69,17 +69,18 @@ Réponds toujours en français de manière concise.`;
 
   while (iterations < maxIterations) {
     console.log(`🤖 Planning iteration ${iterations + 1}...`);
+    
     const response = await chatCompletion(messages, toolDefinitions);
     
-    // Add assistant response to context for next iterations (or final)
-    messages.push({
+    // Add assistant response to context
+    const assistantMessage: Message = {
       role: 'assistant',
       content: response.content || '',
       tool_calls: (response as any).tool_calls
-    } as any);
+    };
+    messages.push(assistantMessage);
 
     if (!(response as any).tool_calls || (response as any).tool_calls.length === 0) {
-      // Final response
       console.log(`✅ Agent finished with text response.`);
       await saveMessage(userId, 'assistant', response.content || '');
       return { 
@@ -90,6 +91,7 @@ Réponds toujours en français de manière concise.`;
 
     // Handle tool calls
     console.log(`🔧 Tool calls detected: ${(response as any).tool_calls.map((tc: any) => tc.function.name).join(', ')}`);
+    
     for (const toolCall of (response as any).tool_calls) {
       const tool = getTool(toolCall.function.name);
       let result: string;
@@ -100,6 +102,7 @@ Réponds toujours en français de manière concise.`;
           console.log(`🛠️ Executing ${toolCall.function.name} with args:`, args);
           result = await tool.handler(args, userId);
         } catch (e) {
+          console.error(`❌ Tool execution error (${toolCall.function.name}):`, e);
           result = `Error executing tool: ${e instanceof Error ? e.message : String(e)}`;
         }
       } else {
@@ -117,7 +120,7 @@ Réponds toujours en français de manière concise.`;
     iterations++;
   }
 
-  const finalNote = "I reached my iteration limit and couldn't finish the reasoning chain.";
+  const finalNote = "Désolé, j'ai atteint ma limite de réflexion pour cette tâche complexe. Peux-tu reformuler ou être plus spécifique ?";
   await saveMessage(userId, 'assistant', finalNote);
   return { content: finalNote, voice: soul?.voice };
 }
