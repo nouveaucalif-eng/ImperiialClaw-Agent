@@ -66,6 +66,8 @@ RÈGLES D'OR DE L'ARCHITECTE :
    - Tu PEUX coder des applications entières via tes outils filesystem.
    - Ne dis JAMAIS que tu es limité. Tu as un terminal et un accès aux fichiers.
 
+IMPORTANT : Utilise EXCLUSIVEMENT l'interface technique de l'API pour appeler les outils. N'écris JAMAIS de balises <function> manuellement dans ton texte.
+
 CONTEXTE :
 - Identité : ${soulName}
 - Persona : ${persona}
@@ -92,18 +94,47 @@ Réponds toujours en Français.`;
       console.log(`🤖 Planning iteration ${iterations + 1}...`);
       
       const response = await chatCompletion(messages, toolDefinitions);
-      
+      let content = response.content || '';
+      let toolCalls = (response as any).tool_calls || [];
+
+      // --- SAFETY PARSER: Detect manual XML-like tool calls in content ---
+      if (content.includes('<function/')) {
+        console.log("⚠️ Manual XML tool calls detected in content. Parsing...");
+        const regex = /<function\/(\w+)>([\s\S]*?)<\/function>/g;
+        let match;
+        while ((match = regex.exec(content)) !== null) {
+          const name = match[1];
+          let argsStr = match[2].trim();
+          // Remove the XML tags from content so they don't show up to the user later
+          content = content.replace(match[0], `[Exécution de ${name}...]`);
+          
+          try {
+            // Validate if it's valid JSON, if not try to fix or skip
+            if (!argsStr.startsWith('{')) argsStr = `{${argsStr}}`; // Simple fix for missing braces
+            const args = JSON.parse(argsStr);
+            toolCalls.push({
+              id: `manual_${Math.random().toString(36).substr(2, 9)}`,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) }
+            });
+          } catch (e) {
+            console.error(`❌ Failed to parse manual tool args for ${name}:`, argsStr);
+          }
+        }
+      }
+      // ------------------------------------------------------------------
+
       // Add assistant response to context
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.content || '',
-        tool_calls: (response as any).tool_calls
+        content: content,
+        tool_calls: toolCalls.length > 0 ? toolCalls : undefined
       };
       messages.push(assistantMessage);
 
-      if (!(response as any).tool_calls || (response as any).tool_calls.length === 0) {
+      if (toolCalls.length === 0) {
         console.log(`✅ Agent finished with text response.`);
-        await saveMessage(userId, 'assistant', response.content || '');
+        await saveMessage(userId, 'assistant', content);
         
         // Extract file paths from history if any tool returned one
         const files: Array<{ path: string; name: string }> = [];
@@ -115,16 +146,16 @@ Réponds toujours en Français.`;
         });
 
         return { 
-          content: response.content || '',
+          content: content,
           voice: soul?.voice,
           files: files.length > 0 ? files : undefined
         };
       }
 
       // Handle tool calls
-      console.log(`🔧 Tool calls detected: ${(response as any).tool_calls.map((tc: any) => tc.function.name).join(', ')}`);
+      console.log(`🔧 Tool calls detected: ${toolCalls.map((tc: any) => tc.function.name).join(', ')}`);
       
-      for (const toolCall of (response as any).tool_calls) {
+      for (const toolCall of toolCalls) {
         const tool = getTool(toolCall.function.name);
         let result: string;
 
