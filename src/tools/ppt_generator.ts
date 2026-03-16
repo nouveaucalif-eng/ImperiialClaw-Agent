@@ -43,69 +43,85 @@ export async function createPowerPoint(slides: SlideData[], filename: string, th
     const s = pres.addSlide();
     s.background = { fill: config.bg };
 
-    // --- Decorative Elements (Design System) ---
-    
+    // --- GEOMETRIC BACKGROUND PATTERNS ---
     if (theme === 'zenith') {
-        // Gradient effect with shapes
-        s.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.15, fill: { color: config.accent } });
-        s.addShape(pres.ShapeType.rect, { x: 0, y: '95%', w: '100%', h: 0.05, fill: { color: config.secondary } });
+        // Futuristic Tech Grid / Shapes
+        for(let i=0; i<5; i++) {
+            s.addShape(pres.ShapeType.ellipse, { 
+                x: Math.random()*10, y: Math.random()*5, w: 2, h: 2, 
+                fill: { color: config.accent, transparency: 80 } 
+            });
+        }
     } else if (theme === 'nova') {
-        // Simple elegant sidebar
-        s.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: 0.2, h: '100%', fill: { color: config.accent } });
+        // Modern Minimalist Geometry
+        s.addShape(pres.ShapeType.rect, { x: 7, y: -1, w: 4, h: 4, fill: { color: config.accent, transparency: 90 }, rotate: 45 });
+        s.addShape(pres.ShapeType.rect, { x: 8, y: 3, w: 3, h: 3, fill: { color: config.secondary, transparency: 85 }, rotate: 20 });
     } else if (theme === 'imperial') {
-        // Gold borders
-        s.addShape(pres.ShapeType.rect, { x: 0.2, y: 0.2, w: '96%', h: 0.02, fill: { color: config.accent }, rectRadius: 0.5 });
-        s.addShape(pres.ShapeType.rect, { x: 0.2, y: '96%', w: '96%', h: 0.02, fill: { color: config.accent }, rectRadius: 0.5 });
+        // Classic Luxury Accents
+        s.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.1, fill: { color: config.accent } });
+        s.addShape(pres.ShapeType.rect, { x: 0, y: '98%', w: '100%', h: 0.2, fill: { color: config.accent } });
     }
 
     if (idx === 0) {
-        // --- TITLE SLIDE ---
+        // --- TITLE SLIDE (Full Screen Impact) ---
+        s.addShape(pres.ShapeType.rect, { x: 1, y: 2, w: 8, h: 2.5, fill: { color: config.bg }, line: { color: config.accent, width: 2 } });
+        
         s.addText(slide.title.toUpperCase(), {
-            x: '10%', y: '35%', w: '80%', h: 1.5,
+            x: 1, y: 2.2, w: 8, h: 1,
             fontSize: 54, bold: true, color: config.titleColor,
-            align: 'center', fontFace: config.font,
-            shadow: { type: 'outer', blur: 3, offset: 2, color: '00000055' }
+            align: 'center', fontFace: config.font
         });
         
         s.addText(slide.content, {
-            x: '10%', y: '55%', w: '80%', h: 1,
+            x: 1, y: 3.5, w: 8, h: 1,
             fontSize: 24, color: config.textColor,
-            align: 'center', fontFace: config.font,
-            italic: true
+            align: 'center', fontFace: config.font, italic: true
         });
     } else {
-        // --- CONTENT SLIDE ---
-        // Title Area with background box for "Nova"
-        if (theme === 'nova') {
-            s.addShape(pres.ShapeType.rect, { x: 0.5, y: 0.3, w: '90%', h: 0.8, fill: { color: 'FFFFFF' } });
-        }
-
+        // --- CONTENT SLIDE (Complex Layout) ---
+        
+        // 1. Title with Underline/Accent
         s.addText(slide.title, {
-            x: 0.5, y: 0.3, w: '90%', h: 0.8,
-            fontSize: 36, bold: true, color: config.titleColor,
-            fontFace: config.font, valign: 'middle',
-            margin: [0, 0, 0, 10]
+            x: 0.5, y: 0.4, w: '60%', h: 0.6,
+            fontSize: 32, bold: true, color: config.titleColor,
+            fontFace: config.font
         });
+        s.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.0, w: 3, h: 0.05, fill: { color: config.accent } });
 
-        // Content Area
-        const lines = slide.content.split('\n').filter(l => l.trim().length > 0);
-        const formattedContent = lines.map(line => ({ 
-            text: line.replace(/^[-\*\+]\s*/, ''), 
-            options: { bullet: true, margin: [0, 0, 0, 10] } 
-        }));
-
-        s.addText(formattedContent, {
-            x: 0.8, y: 1.5, w: '85%', h: '65%',
-            fontSize: 20, color: config.textColor,
-            fontFace: config.font, valign: 'top',
-            lineSpacing: 32
-        });
+        // 2. Image Integration (fetch from Unsplash based on keywords if URL not provided)
+        const keyword = slide.title.split(' ').pop() || 'business';
+        const imgUrl = slide.imageUrl || `https://source.unsplash.com/featured/800x600?${encodeURIComponent(keyword)}`;
+        
+        // Alternating Layout: Image Left or Right
+        const isImageRight = idx % 2 === 0;
+        
+        if (isImageRight) {
+            // Text Left, Image Right
+            s.addText(formatContent(slide.content), {
+                x: 0.5, y: 1.4, w: '45%', h: '60%',
+                fontSize: 18, color: config.textColor,
+                fontFace: config.font, valign: 'top', lineSpacing: 28
+            });
+            s.addImage({ path: imgUrl, x: 5.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
+            // Decorative frame behind image
+            s.addShape(pres.ShapeType.rect, { x: 5.7, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
+        } else {
+            // Image Left, Text Right
+            s.addImage({ path: imgUrl, x: 0.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
+            s.addShape(pres.ShapeType.rect, { x: 0.3, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
+            
+            s.addText(formatContent(slide.content), {
+                x: 5.0, y: 1.4, w: '45%', h: '60%',
+                fontSize: 18, color: config.textColor,
+                fontFace: config.font, valign: 'top', lineSpacing: 28
+            });
+        }
     }
 
     // Branding Footer
-    s.addText("Propulsé par ImperiialClaw OS | Agent Intelligence", {
-        x: '5%', y: '92%', w: '90%', h: 0.3,
-        fontSize: 9, color: 'A0AEC0', align: 'right', fontFace: config.font
+    s.addText("ImperiialClaw OS | Intelligence Augmentée", {
+        x: '5%', y: '94%', w: '90%', h: 0.2,
+        fontSize: 8, color: 'A0AEC0', align: 'right', fontFace: config.font
     });
   });
 
@@ -113,8 +129,16 @@ export async function createPowerPoint(slides: SlideData[], filename: string, th
   const safeFilename = filename.endsWith('.pptx') ? filename : `${filename}.pptx`;
   const filePath = path.join(tempDir, safeFilename);
 
-  console.log(`Writing PowerPoint to: ${filePath}`);
+  console.log(`Generating visual PPT at: ${filePath}`);
   await pres.writeFile({ fileName: filePath });
   
   return filePath;
+}
+
+function formatContent(content: string) {
+    const lines = content.split('\n').filter(l => l.trim().length > 0);
+    return lines.map(line => ({ 
+        text: line.replace(/^[-\*\+]\s*/, ''), 
+        options: { bullet: true, margin: [0, 0, 0, 5] } 
+    }));
 }
