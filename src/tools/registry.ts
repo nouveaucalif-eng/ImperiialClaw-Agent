@@ -82,6 +82,11 @@ registerTool({
         type: 'object',
         properties: {
           filename: { type: 'string', description: 'Nom du fichier (ex: presentation_musset)' },
+          theme: { 
+            type: 'string', 
+            enum: ['modern', 'dark', 'corporate'], 
+            description: 'Le style visuel de la présentation (modern, dark ou corporate)' 
+          },
           slides: {
             type: 'array',
             items: {
@@ -98,9 +103,9 @@ registerTool({
       }
     },
   },
-  handler: async (args: { filename: string, slides: SlideData[] }) => {
-    const filePath = await createPowerPoint(args.slides, args.filename);
-    return `Succès ! Le fichier a été généré. __PPT_FILE__:${filePath}`;
+  handler: async (args: { filename: string, slides: SlideData[], theme?: any }) => {
+    const filePath = await createPowerPoint(args.slides, args.filename, args.theme);
+    return `Succès ! Le fichier a été généré avec le style "${args.theme || 'modern'}". __PPT_FILE__:${filePath}`;
   }
 });
 
