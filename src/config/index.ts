@@ -11,7 +11,10 @@ const envSchema = z.object({
   OPENROUTER_MODEL: z.string().default('openrouter/auto'),
   DB_PATH: z.string().default('./data/memory.db'),
   AGENT_MAX_ITERATIONS: z.string().transform(Number).default('5'),
+  ELEVENLABS_API_KEY: z.string(),
+  ELEVENLABS_VOICE_ID: z.string().default('21m00T838DmqD476nd6o'), // Rachel (Mature/Human female)
 });
+
 
 const _env = envSchema.safeParse(process.env);
 
