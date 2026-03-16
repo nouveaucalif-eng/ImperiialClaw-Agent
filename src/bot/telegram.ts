@@ -7,13 +7,23 @@ import fs from 'fs';
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 
+// Global logging middleware
+bot.use(async (ctx, next) => {
+  console.log(`📩 Incoming update: [${ctx.update.update_id}] - Type: ${Object.keys(ctx.update).filter(k => k !== 'update_id')[0]}`);
+  return next();
+});
+
 // Whitelist Middleware
 bot.use(async (ctx, next) => {
   const userId = ctx.from?.id.toString();
+  console.log(`👤 Processing request from UserID: ${userId}`);
+  
   if (userId && env.TELEGRAM_ALLOWED_USER_IDS.includes(userId)) {
+    console.log(`✅ User ${userId} is whitelisted.`);
     return next();
   }
-  console.log(`🚫 Unauthorized access attempt from ID: ${userId}`);
+  
+  console.log(`🚫 Unauthorized access attempt from ID: ${userId}. Allowed IDs: [${env.TELEGRAM_ALLOWED_USER_IDS.join(', ')}]`);
   // Implicitly ignore unauthorized users as requested
 });
 
@@ -54,6 +64,7 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
 bot.on('message:text', async (ctx) => {
   const userId = ctx.from?.id.toString();
   const text = ctx.message.text;
+  console.log(`📝 Received text message from ${userId}: "${text}"`);
 
   if (!userId) return;
   await processUserMessage(userId, text, ctx);
