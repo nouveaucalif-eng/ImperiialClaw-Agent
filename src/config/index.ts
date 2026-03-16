@@ -12,8 +12,9 @@ const envSchema = z.object({
   AGENT_MAX_ITERATIONS: z.string().transform(Number).default('5'),
   ELEVENLABS_API_KEY: z.string().optional(),
   ELEVENLABS_VOICE_ID: z.string().optional(),
-  EDGE_TTS_VOICE: z.string().default('fr-FR-DeniseNeural'), // High quality French female
+  EDGE_TTS_VOICE: z.string().default('fr-FR-EloiseNeural'), // More natural French female
 });
+
 
 
 
