@@ -75,8 +75,10 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
         }
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Bot error:', error);
+    const errorLog = `[${new Date().toISOString()}] User: ${userId} - Error: ${error.message}\nStack: ${error.stack}\n---\n`;
+    fs.appendFileSync('bot_errors.log', errorLog);
     await ctx.reply('Désolé, j’ai rencontré une erreur lors du traitement de votre demande.');
   }
 }

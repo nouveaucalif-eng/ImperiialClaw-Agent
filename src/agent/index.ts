@@ -12,6 +12,7 @@ export interface AgentResponse {
 }
 
 export async function runAgent(userId: string, input: string): Promise<AgentResponse> {
+  console.log(`🚀 runAgent called for user ${userId} with input: "${input.substring(0, 50)}..."`);
   try {
     // 1. Prepare context
     const history = await getHistory(userId);
