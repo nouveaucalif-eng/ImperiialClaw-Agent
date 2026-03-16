@@ -77,9 +77,8 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
     }
   } catch (error: any) {
     console.error('❌ Bot error:', error);
-    const errorLog = `[${new Date().toISOString()}] User: ${userId} - Error: ${error.message}\nStack: ${error.stack}\n---\n`;
-    fs.appendFileSync('bot_errors.log', errorLog);
-    await ctx.reply('Désolé, j’ai rencontré une erreur lors du traitement de votre demande.');
+    const errorMsg = `🚨 BOT CRASH:\nMessage: ${error.message}\nStack: ${error.stack?.substring(0, 300)}...`;
+    await ctx.reply(errorMsg);
   }
 }
 
