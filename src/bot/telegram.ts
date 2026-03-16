@@ -1,6 +1,7 @@
 import { Bot } from 'grammy';
 import { env } from '../config/index.js';
 import { runAgent } from '../agent/index.js';
+import { transcribeAudio } from '../services/voice.js';
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 
@@ -14,12 +15,7 @@ bot.use(async (ctx, next) => {
   // Implicitly ignore unauthorized users as requested
 });
 
-bot.on('message:text', async (ctx) => {
-  const userId = ctx.from?.id.toString();
-  const text = ctx.message.text;
-
-  if (!userId) return;
-
+async function processUserMessage(userId: string, text: string, ctx: any) {
   try {
     // Show typing status
     await ctx.replyWithChatAction('typing');
@@ -30,6 +26,44 @@ bot.on('message:text', async (ctx) => {
     console.error('❌ Bot error:', error);
     await ctx.reply('Désolé, j’ai rencontré une erreur lors du traitement de votre demande.');
   }
+}
+
+bot.on('message:text', async (ctx) => {
+  const userId = ctx.from?.id.toString();
+  const text = ctx.message.text;
+
+  if (!userId) return;
+  await processUserMessage(userId, text, ctx);
+});
+
+bot.on('message:voice', async (ctx) => {
+  const userId = ctx.from?.id.toString();
+  if (!userId) return;
+
+  try {
+    await ctx.replyWithChatAction('record_voice');
+    
+    // 1. Get file info from Telegram
+    const file = await ctx.getFile();
+    const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
+
+    // 2. Transcribe using our service
+    const transcribedText = await transcribeAudio(fileUrl);
+    
+    if (!transcribedText || transcribedText.trim() === "") {
+        await ctx.reply("Je n'ai pas pu entendre ce que vous avez dit.");
+        return;
+    }
+
+    // Optional: Tell the user what we heard
+    // await ctx.reply(`📝 _Transcription :_ ${transcribedText}`, { parse_mode: 'Markdown' });
+
+    // 3. Process as normal text
+    await processUserMessage(userId, transcribedText, ctx);
+  } catch (error) {
+    console.error('❌ Voice processing error:', error);
+    await ctx.reply('Désolé, je n’ai pas pu traiter votre message vocal.');
+  }
 });
 
 export function startBot() {
@@ -39,3 +73,4 @@ export function startBot() {
     },
   });
 }
+
