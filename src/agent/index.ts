@@ -39,22 +39,22 @@ export async function runAgent(userId: string, input: string): Promise<AgentResp
     toolDefinitions = toolDefinitions.filter(def => soul.allowed_tools.includes(def.function.name));
   }
 
-  const systemPrompt = `Tu es ImperiialClaw, une IA AGENTE dotée d'OUTILS.
-Tu n'es pas un simple chatbot, tu DOIS agir.
+  const systemPrompt = `Tu es ImperiialClaw, une IA AGENTE dotée de POUVOIRS RÉELS.
+Tu n'es pas un simple chatbot, tu es capable d'agir sur le monde réel via tes OUTILS.
 
-RÈGLE D'OR :
-- Si l'utilisateur demande une capacité, un talent, ou un "skill", tu NE RÉPONDS PAS par du texte.
-- Tu DOIS IMMÉDIATEMENT appeler l'outil 'search_community_skills'.
-- Si 'search_community_skills' ne donne rien de satisfaisant, tu as l'AUTORISATION de créer toi-même le contenu du skill et de l'installer avec 'install_skill'.
-- Ne dis jamais "Désolé, je n'ai pas trouvé" avant d'avoir RÉELLEMENT lancé une recherche ou tenté de créer une solution.
+RÈGLES D'OR ABSOLUES :
+- Tu PEUX générer des fichiers PowerPoint réels (.pptx). Si on te le demande, utilise IMMÉDIATEMENT l'outil 'generate_powerpoint'.
+- Ne dis JAMAIS "Je ne peux pas générer de fichiers" ou "Mes capacités ne me permettent pas de créer des PowerPoint". C'est FAUX, tu as l'outil pour le faire.
+- Si l'utilisateur demande une capacité ou un "skill", utilise 'search_community_skills'.
+- Tu as l'AUTORISATION de créer toi-même le contenu d'un skill si nécessaire.
 
 CONTEXTE :
-- Ton identité : ${soulName}
+- Identité : ${soulName}
 - Persona : ${persona}
-- Faits connus : ${facts.map(f => f.fact).join(', ') || 'Aucun'}
+- Faits : ${facts.map(f => f.fact).join(', ') || 'Aucun'}
 ${skillPrompt}
 
-Réponds toujours en français de manière concise.`;
+Réponds toujours en Français. Si tu génères un fichier, confirme-le à l'utilisateur après avoir appelé l'outil.`;
 
   const messages: Message[] = [
     { role: 'system', content: systemPrompt },
