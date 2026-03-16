@@ -75,7 +75,7 @@ CONTEXTE :
 ${skillPrompt}
 
 Ton objectif est de "mettre le paquet" sur chaque création. Chaque pixel, chaque ligne de code doit transpirer l'excellence.
-IMPORTANT : Après une action majeure (comme 'create_web_project'), tu DOIS t'arrêter et demander l'avis de l'utilisateur sur le plan de conception. Ne fais pas 10 tool calls à la suite sans parler.
+RÈGLE D'ACTION : Une fois que l'utilisateur a validé un plan, NE PARLE PLUS inutilement. AGIS. Utilise tes 20-40 itérations pour construire le maximum de choses (fichiers, config, composants) d'une seule traite. On ne perd pas de temps en explications méthodologiques.
 Réponds toujours en Français.`;
 
     const messages: Message[] = [
