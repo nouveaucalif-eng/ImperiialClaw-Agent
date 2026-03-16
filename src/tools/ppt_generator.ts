@@ -9,12 +9,6 @@ export interface SlideData {
   imageUrl?: string;
 }
 
-export interface SlideData {
-  title: string;
-  content: string;
-  imageUrl?: string;
-}
-
 export type ThemeType = 'zenith' | 'nova' | 'imperial';
 
 interface ThemeConfig {
@@ -33,6 +27,7 @@ const THEMES: Record<ThemeType, ThemeConfig> = {
 };
 
 export async function createPowerPoint(slides: SlideData[], filename: string, theme: ThemeType = 'nova'): Promise<string> {
+  console.log(`🎬 Starting PowerPoint generation for: ${filename} (Theme: ${theme})`);
   const PptxGenJS = (pptxgen as any).default || pptxgen;
   const pres = new (PptxGenJS as any)();
   const config = THEMES[theme] || THEMES.nova;
@@ -88,30 +83,39 @@ export async function createPowerPoint(slides: SlideData[], filename: string, th
         });
         s.addShape(pres.ShapeType.rect, { x: 0.5, y: 1.0, w: 3, h: 0.05, fill: { color: config.accent } });
 
-        // 2. Image Integration (fetch from Unsplash based on keywords if URL not provided)
-        const keyword = slide.title.split(' ').pop() || 'business';
-        const imgUrl = slide.imageUrl || `https://source.unsplash.com/featured/800x600?${encodeURIComponent(keyword)}`;
+        // 2. Image Integration (fetch from reliable source)
+        const keyword = slide.title.split(' ').pop()?.toLowerCase() || 'abstract';
+        const imgUrl = slide.imageUrl || `https://loremflickr.com/800/600/${encodeURIComponent(keyword)}`;
         
         // Alternating Layout: Image Left or Right
         const isImageRight = idx % 2 === 0;
         
-        if (isImageRight) {
-            // Text Left, Image Right
+        try {
+            if (isImageRight) {
+                // Text Left, Image Right
+                s.addText(formatContent(slide.content), {
+                    x: 0.5, y: 1.4, w: '45%', h: '60%',
+                    fontSize: 18, color: config.textColor,
+                    fontFace: config.font, valign: 'top', lineSpacing: 28
+                });
+                s.addImage({ path: imgUrl, x: 5.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
+                s.addShape(pres.ShapeType.rect, { x: 5.7, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
+            } else {
+                // Image Left, Text Right
+                s.addImage({ path: imgUrl, x: 0.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
+                s.addShape(pres.ShapeType.rect, { x: 0.3, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
+                
+                s.addText(formatContent(slide.content), {
+                    x: 5.0, y: 1.4, w: '45%', h: '60%',
+                    fontSize: 18, color: config.textColor,
+                    fontFace: config.font, valign: 'top', lineSpacing: 28
+                });
+            }
+        } catch (imgErr) {
+            console.error(`⚠️ Image failed for slide ${idx}:`, imgErr);
+            // Fallback: full width text
             s.addText(formatContent(slide.content), {
-                x: 0.5, y: 1.4, w: '45%', h: '60%',
-                fontSize: 18, color: config.textColor,
-                fontFace: config.font, valign: 'top', lineSpacing: 28
-            });
-            s.addImage({ path: imgUrl, x: 5.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
-            // Decorative frame behind image
-            s.addShape(pres.ShapeType.rect, { x: 5.7, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
-        } else {
-            // Image Left, Text Right
-            s.addImage({ path: imgUrl, x: 0.5, y: 1.2, w: 4.0, h: 3.0, rounded: true });
-            s.addShape(pres.ShapeType.rect, { x: 0.3, y: 1.4, w: 4.0, h: 3.0, fill: { color: config.accent, transparency: 70 }, z: -1 });
-            
-            s.addText(formatContent(slide.content), {
-                x: 5.0, y: 1.4, w: '45%', h: '60%',
+                x: 0.5, y: 1.4, w: '90%', h: '60%',
                 fontSize: 18, color: config.textColor,
                 fontFace: config.font, valign: 'top', lineSpacing: 28
             });
