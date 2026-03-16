@@ -12,8 +12,9 @@ const envSchema = z.object({
   DB_PATH: z.string().default('./data/memory.db'),
   AGENT_MAX_ITERATIONS: z.string().transform(Number).default('5'),
   ELEVENLABS_API_KEY: z.string().trim().transform(v => v.replace(/^["']|["']$/g, '')),
-  ELEVENLABS_VOICE_ID: z.string().default('21m00T838DmqD476nd6o'), // Rachel
+  ELEVENLABS_VOICE_ID: z.string().default('EXAVITQu4vr4xnSDxMaL'), // Bella (Soft female)
 });
+
 
 
 
