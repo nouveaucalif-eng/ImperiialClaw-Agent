@@ -35,26 +35,45 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
     const agentResponse = await runAgent(userId, text);
     const responseText = agentResponse.content;
     
-    if (!responseText) {
+    if (!responseText && (!agentResponse.files || agentResponse.files.length === 0)) {
       await ctx.reply("Je n'ai pas pu générer de réponse.");
       return;
     }
 
-    if (respondWithVoice || text.toLowerCase().includes("réponds en vocal") || text.toLowerCase().includes("parle-moi")) {
-      try {
-        const audioPath = await textToSpeech(responseText, agentResponse.voice);
-        await ctx.replyWithVoice(new InputFile(audioPath));
-        
-        // Cleanup temp file
-        if (fs.existsSync(audioPath)) {
-          fs.unlinkSync(audioPath);
+    // 1. Send Text or Voice response
+    if (responseText) {
+      if (respondWithVoice || text.toLowerCase().includes("réponds en vocal") || text.toLowerCase().includes("parle-moi")) {
+        try {
+          const audioPath = await textToSpeech(responseText, agentResponse.voice);
+          await ctx.replyWithVoice(new InputFile(audioPath));
+          if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+        } catch (ttsError) {
+          console.error('❌ TTS Error:', ttsError);
+          await ctx.reply(responseText);
         }
-      } catch (ttsError) {
-        console.error('❌ TTS Error details:', ttsError);
-        await ctx.reply(responseText); // Fallback to text if TTS fails
+      } else {
+        await ctx.reply(responseText);
       }
-    } else {
-      await ctx.reply(responseText);
+    }
+
+    // 2. Send generated files if any
+    if (agentResponse.files && agentResponse.files.length > 0) {
+      for (const file of agentResponse.files) {
+        try {
+          console.log(`Sending file: ${file.path}`);
+          await ctx.replyWithDocument(new InputFile(file.path, file.name));
+          
+          // Cleanup temp file after sending
+          if (fs.existsSync(file.path)) {
+            setTimeout(() => {
+                try { fs.unlinkSync(file.path); } catch(e) {}
+            }, 5000); // Wait 5s to ensure TG finished upload
+          }
+        } catch (fileError) {
+          console.error('❌ Error sending file:', fileError);
+          await ctx.reply(`Erreur lors de l'envoi du fichier: ${file.name}`);
+        }
+      }
     }
   } catch (error) {
     console.error('❌ Bot error:', error);

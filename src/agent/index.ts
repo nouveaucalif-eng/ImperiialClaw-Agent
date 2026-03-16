@@ -8,6 +8,7 @@ import { loadSoul } from '../tools/soul_manager.js';
 export interface AgentResponse {
   content: string;
   voice?: string;
+  files?: Array<{ path: string; name: string }>;
 }
 
 export async function runAgent(userId: string, input: string): Promise<AgentResponse> {
@@ -83,9 +84,20 @@ Réponds toujours en français de manière concise.`;
     if (!(response as any).tool_calls || (response as any).tool_calls.length === 0) {
       console.log(`✅ Agent finished with text response.`);
       await saveMessage(userId, 'assistant', response.content || '');
+      
+      // Extract file paths from history if any tool returned one
+      const files: Array<{ path: string; name: string }> = [];
+      messages.forEach(m => {
+        if (m.role === 'tool' && m.content && m.content.includes('__PPT_FILE__:')) {
+          const path = m.content.split('__PPT_FILE__:')[1].trim();
+          files.push({ path, name: 'Presentation.pptx' });
+        }
+      });
+
       return { 
         content: response.content || '',
-        voice: soul?.voice 
+        voice: soul?.voice,
+        files: files.length > 0 ? files : undefined
       };
     }
 

@@ -1,5 +1,6 @@
 import { searchCommunitySkills, installSkill, listInstalledSkills } from './skill_manager.js';
-import { listAvailableSouls } from './soul_manager.js';
+import { listAvailableSouls, loadSoul } from './soul_manager.js';
+import { createPowerPoint, SlideData } from './ppt_generator.js';
 import { setActiveSkill, setActiveSoul } from '../memory/db.js';
 
 export type ToolFunction = (args: any, userId?: string) => Promise<string> | string;
@@ -69,6 +70,38 @@ registerTool({
     await setActiveSoul(userId, args.soulId);
     return `✅ Transition vers l'âme "${args.soulId}" effectuée.`;
   },
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'generate_powerpoint',
+      description: 'Génère un véritable fichier PowerPoint (.pptx) de haute qualité avec plusieurs slides.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', description: 'Nom du fichier (ex: presentation_musset)' },
+          slides: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                content: { type: 'string', description: 'Texte de la slide (utilisez des tirets pour les listes)' }
+              },
+              required: ['title', 'content']
+            }
+          }
+        },
+        required: ['filename', 'slides']
+      }
+    },
+  },
+  handler: async (args: { filename: string, slides: SlideData[] }) => {
+    const filePath = await createPowerPoint(args.slides, args.filename);
+    return `Succès ! Le fichier a été généré. __PPT_FILE__:${filePath}`;
+  }
 });
 
 // Skills Tools
