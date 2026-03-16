@@ -73,3 +73,14 @@ export async function getFacts(userId: string) {
 
   return facts;
 }
+
+export async function getActiveSkill(userId: string): Promise<string | null> {
+  const doc = await db.collection('users').doc(userId).get();
+  return doc.data()?.activeSkill || null;
+}
+
+export async function setActiveSkill(userId: string, skillName: string | null) {
+  await db.collection('users').doc(userId).set({
+    activeSkill: skillName
+  }, { merge: true });
+}

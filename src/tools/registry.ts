@@ -1,4 +1,7 @@
-export type ToolFunction = (args: any) => Promise<string> | string;
+import { searchCommunitySkills, installSkill, listInstalledSkills } from './skill_manager.js';
+import { setActiveSkill } from '../memory/db.js';
+
+export type ToolFunction = (args: any, userId?: string) => Promise<string> | string;
 
 export interface Tool {
   definition: {
@@ -29,6 +32,84 @@ export function getTool(name: string) {
 export function getAllToolDefinitions() {
   return Array.from(registry.values()).map(t => t.definition);
 }
+
+// --- Specific Tools Registration ---
+
+// Skills Tools
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'search_community_skills',
+      description: 'Cherche des nouveaux personas/compétences sur la bibliothèque communautaire prompts.chat.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Le mot-clé pour la recherche (ex: "Linux Terminal", "Travel Guide")' }
+        },
+        required: ['query']
+      },
+    },
+  },
+  handler: (args: any) => searchCommunitySkills(args.query),
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'install_skill',
+      description: 'Installe un nouveau persona/compétence localement.',
+      parameters: {
+        type: 'object',
+        properties: {
+          act: { type: 'string', description: 'Le nom du rôle/persona' },
+          prompt: { type: 'string', description: 'Le contenu complet du prompt à installer' }
+        },
+        required: ['act', 'prompt']
+      },
+    },
+  },
+  handler: (args: any) => installSkill(args.act, args.prompt),
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'list_installed_skills',
+      description: 'Liste les compétences (personas) actuellement installées dans le bot.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  handler: () => listInstalledSkills(),
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'activate_skill',
+      description: 'Active un persona spécifique parmi ceux installés localement.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Le nom du fichier skill à activer (ex: "linux_terminal.md"). Utilise "none" pour désactiver.' }
+        },
+        required: ['name']
+      },
+    },
+  },
+  handler: async (args: any, userId?: string) => {
+    if (!userId) return "Erreur: ID utilisateur manquant.";
+    const skillToSet = args.name.toLowerCase() === 'none' ? null : args.name;
+    await setActiveSkill(userId, skillToSet);
+    return `✅ Persona "${args.name}" activé. Le bot changera de comportement dès le prochain message.`;
+  },
+});
 
 // Initial Tool: get_current_time
 registerTool({

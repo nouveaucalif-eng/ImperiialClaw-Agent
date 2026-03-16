@@ -1,15 +1,25 @@
 import { env } from '../config/index.js';
 import { chatCompletion, Message } from '../llm/client.js';
 import { getAllToolDefinitions, getTool } from '../tools/registry.js';
-import { getHistory, saveMessage, getFacts } from '../memory/db.js';
+import { getHistory, saveMessage, getFacts, getActiveSkill } from '../memory/db.js';
+import { readSkillContent } from '../tools/skill_manager.js';
 
 export async function runAgent(userId: string, input: string) {
   // 1. Prepare context
   const history = await getHistory(userId);
   const facts = await getFacts(userId);
+  const activeSkillName = await getActiveSkill(userId);
+  
+  let skillPrompt = "";
+  if (activeSkillName) {
+    const content = readSkillContent(activeSkillName);
+    if (content) {
+      skillPrompt = `\n\nCOMPÉTENCE ACTIVE (PERSONA) :\nTu dois adopter le comportement suivant :\n${content}`;
+    }
+  }
   
   const systemPrompt = `Tu es ImperiialClaw, un assistant IA personnel de haut niveau. 
-Tu tournes sur le Cloud (Render) et communiques via Telegram. Tu es capable de comprendre les messages vocaux (transcription via Groq Whisper) et de répondre par la voix (via ElevenLabs).
+Tu tournes sur le Cloud (Render) et communiques via Telegram. Tu es capable de comprendre les messages vocaux et de répondre par la voix.
 
 RÈGLES IMPORTANTES :
 - L'utilisateur peut t'envoyer des messages vocaux.
@@ -17,6 +27,7 @@ RÈGLES IMPORTANTES :
 - ID Utilisateur actuel: ${userId}
 - Faits connus sur l'utilisateur:
 ${facts.map(f => `- ${f.fact}`).join('\n') || 'Aucun'}
+${skillPrompt}
 
 Tu dois impérativement répondre en français. Sois concis, utile, chaleureux et professionnel.`;
 
@@ -57,7 +68,8 @@ Tu dois impérativement répondre en français. Sois concis, utile, chaleureux e
       if (tool) {
         try {
           const args = JSON.parse(toolCall.function.arguments);
-          result = await tool.handler(args);
+          // Pass userId to tool handler
+          result = await tool.handler(args, userId);
         } catch (e) {
           result = `Error executing tool: ${e instanceof Error ? e.message : String(e)}`;
         }
