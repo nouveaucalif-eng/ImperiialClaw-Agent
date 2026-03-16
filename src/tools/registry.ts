@@ -303,8 +303,12 @@ registerTool({
     },
   },
   handler: async (args: any) => {
-    return `🚀 Projet "${args.name}" initialisé. L'environnement est prêt (Vite+React+Tailwind). 
-ARRÊTE-TOI ICI et présente ton plan d'architecture/design à l'utilisateur avant de coder.`;
+    const projectPath = path.join(process.cwd(), args.name);
+    if (!fs.existsSync(projectPath)) {
+      fs.mkdirSync(projectPath, { recursive: true });
+    }
+    return `🚀 Dossier "${args.name}" créé physiquement à l'emplacement : ${projectPath}. 
+L'environnement est prêt. ARRÊTE-TOI ICI et demande à l'utilisateur si tu dois installer les dépendances via 'run_command' ou commencer à écrire les fichiers de config.`;
   },
 });
 
