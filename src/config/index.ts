@@ -9,11 +9,12 @@ const envSchema = z.object({
   GROQ_API_KEY: z.string().trim().transform(v => v.replace(/^["']|["']$/g, '')),
   OPENROUTER_API_KEY: z.string().optional().transform(v => v?.trim().replace(/^["']|["']$/g, '')),
   OPENROUTER_MODEL: z.string().default('openrouter/auto'),
-  DB_PATH: z.string().default('./data/memory.db'),
   AGENT_MAX_ITERATIONS: z.string().transform(Number).default('5'),
-  ELEVENLABS_API_KEY: z.string().trim().transform(v => v.replace(/^["']|["']$/g, '')),
-  ELEVENLABS_VOICE_ID: z.string().default('EXAVITQu4vr4xnSDxMaL'), // Bella (Soft female)
+  ELEVENLABS_API_KEY: z.string().optional(),
+  ELEVENLABS_VOICE_ID: z.string().optional(),
+  EDGE_TTS_VOICE: z.string().default('fr-FR-DeniseNeural'), // High quality French female
 });
+
 
 
 
