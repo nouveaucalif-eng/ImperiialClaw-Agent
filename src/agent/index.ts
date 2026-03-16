@@ -13,7 +13,11 @@ export interface AgentResponse {
   files?: Array<{ path: string; name: string }>;
 }
 
-export async function runAgent(userId: string, input: string): Promise<AgentResponse> {
+export async function runAgent(
+  userId: string, 
+  input: string, 
+  onProgress?: (msg: string) => void
+): Promise<AgentResponse> {
   console.log(`🚀 runAgent called for user ${userId} with input: "${input.substring(0, 50)}..."`);
   try {
     // 1. Prepare context
@@ -93,6 +97,12 @@ Réponds toujours en Français.`;
     while (iterations < maxIterations) {
       console.log(`🤖 Planning iteration ${iterations + 1}...`);
       
+      // Heartbeat: If it's taking too long, send a progress message to keep user patient
+      if (iterations > 0 && iterations % 5 === 0) {
+        console.log("💓 Sending heartbeat message to prevent silence...");
+        if (onProgress) onProgress(`Je travaille toujours sur ta demande... (Étape ${iterations}/${maxIterations})`);
+      }
+
       const response = await chatCompletion(messages, toolDefinitions);
       let content = response.content || '';
       let toolCalls = (response as any).tool_calls || [];
@@ -100,23 +110,31 @@ Réponds toujours en Français.`;
       // --- SAFETY PARSER: Detect manual XML-like tool calls in content ---
       if (content.includes('<function/')) {
         console.log("⚠️ Manual XML tool calls detected in content. Parsing...");
-        const regex = /<function\/(\w+)>([\s\S]*?)<\/function>/g;
+        // More robust regex: matches <function/name{params}>content</function> 
+        // OR <function/name>{params}</function>
+        const regex = /<function\/(\w+)([^>]*)>([\s\S]*?)<\/function>/g;
         let match;
         while ((match = regex.exec(content)) !== null) {
           const name = match[1];
-          let argsStr = match[2].trim();
+          const tagParams = match[2].trim();
+          const betweenContent = match[3].trim();
+          
+          let argsStr = tagParams || betweenContent;
+          
           // Remove the XML tags from content so they don't show up to the user later
           content = content.replace(match[0], `[Exécution de ${name}...]`);
           
           try {
-            // Validate if it's valid JSON, if not try to fix or skip
-            if (!argsStr.startsWith('{')) argsStr = `{${argsStr}}`; // Simple fix for missing braces
-            const args = JSON.parse(argsStr);
-            toolCalls.push({
-              id: `manual_${Math.random().toString(36).substr(2, 9)}`,
-              type: 'function',
-              function: { name, arguments: JSON.stringify(args) }
-            });
+            if (argsStr) {
+               // Simple JSON correction: if it doesn't start with {, add it
+               if (!argsStr.startsWith('{')) argsStr = `{${argsStr}}`;
+               const args = JSON.parse(argsStr);
+               toolCalls.push({
+                 id: `manual_${Math.random().toString(36).substr(2, 9)}`,
+                 type: 'function',
+                 function: { name, arguments: JSON.stringify(args) }
+               });
+            }
           } catch (e) {
             console.error(`❌ Failed to parse manual tool args for ${name}:`, argsStr);
           }

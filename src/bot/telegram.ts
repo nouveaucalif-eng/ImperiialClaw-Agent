@@ -32,7 +32,9 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
     // Show typing status
     await ctx.replyWithChatAction(respondWithVoice ? 'record_voice' : 'typing');
     
-    const agentResponse = await runAgent(userId, text);
+    const agentResponse = await runAgent(userId, text, (msg) => {
+      ctx.reply(msg).catch((e: any) => console.error("Heartbeat fail:", e));
+    });
     const responseText = agentResponse.content;
     
     if (!responseText && (!agentResponse.files || agentResponse.files.length === 0)) {
