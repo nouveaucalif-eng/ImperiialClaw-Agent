@@ -49,10 +49,18 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
           if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
         } catch (ttsError) {
           console.error('❌ TTS Error:', ttsError);
-          await ctx.reply(responseText);
+          // Split text if too long
+          const chunks = splitMessage(responseText);
+          for (const chunk of chunks) {
+            await ctx.reply(chunk);
+          }
         }
       } else {
-        await ctx.reply(responseText);
+        // Split text if too long
+        const chunks = splitMessage(responseText);
+        for (const chunk of chunks) {
+          await ctx.reply(chunk);
+        }
       }
     }
 
@@ -77,9 +85,29 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
     }
   } catch (error: any) {
     console.error('❌ Bot error:', error);
-    const errorMsg = `🚨 BOT CRASH:\nMessage: ${error.message}\nStack: ${error.stack?.substring(0, 300)}...`;
-    await ctx.reply(errorMsg);
+    // Clean error logging
+    if (userId) {
+      try {
+        const errorLog = `[${new Date().toISOString()}] User: ${userId} - Error: ${error.message}\nStack: ${error.stack}\n---\n`;
+        fs.appendFileSync('bot_errors.log', errorLog);
+      } catch (e) {}
+    }
+    await ctx.reply('Désolé, j’ai rencontré une erreur lors du traitement de votre demande.');
   }
+}
+
+// Helper to split long messages (Telegram limit is 4096)
+function splitMessage(text: string, limit: number = 4000): string[] {
+  const chunks: string[] = [];
+  let current = text;
+  while (current.length > limit) {
+    let splitAt = current.lastIndexOf('\n', limit);
+    if (splitAt === -1) splitAt = limit;
+    chunks.push(current.substring(0, splitAt));
+    current = current.substring(splitAt).trim();
+  }
+  chunks.push(current);
+  return chunks;
 }
 
 bot.on('message:text', async (ctx) => {
