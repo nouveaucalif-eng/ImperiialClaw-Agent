@@ -84,3 +84,14 @@ export async function setActiveSkill(userId: string, skillName: string | null) {
     activeSkill: skillName
   }, { merge: true });
 }
+
+export async function getActiveSoul(userId: string): Promise<string | null> {
+  const doc = await db.collection('users').doc(userId).get();
+  return doc.data()?.activeSoul || 'master';
+}
+
+export async function setActiveSoul(userId: string, soulId: string) {
+  await db.collection('users').doc(userId).set({
+    activeSoul: soulId
+  }, { merge: true });
+}

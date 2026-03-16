@@ -1,5 +1,6 @@
 import { searchCommunitySkills, installSkill, listInstalledSkills } from './skill_manager.js';
-import { setActiveSkill } from '../memory/db.js';
+import { listAvailableSouls } from './soul_manager.js';
+import { setActiveSkill, setActiveSoul } from '../memory/db.js';
 
 export type ToolFunction = (args: any, userId?: string) => Promise<string> | string;
 
@@ -34,6 +35,41 @@ export function getAllToolDefinitions() {
 }
 
 // --- Specific Tools Registration ---
+
+// Souls Management
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'list_available_souls',
+      description: 'Liste les "Âmes" (personnalités profondes) disponibles pour le bot.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  handler: () => listAvailableSouls(),
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'switch_soul',
+      description: 'Change l\'âme active du bot. Cela modifie sa personnalité, sa voix et ses outils.',
+      parameters: {
+        type: 'object',
+        properties: {
+          soulId: { type: 'string', description: 'L\'ID de l\'âme à activer (ex: "master", "shadow")' }
+        },
+        required: ['soulId']
+      },
+    },
+  },
+  handler: async (args: any, userId?: string) => {
+    if (!userId) return "Erreur: ID utilisateur manquant.";
+    await setActiveSoul(userId, args.soulId);
+    return `✅ Transition vers l'âme "${args.soulId}" effectuée.`;
+  },
+});
 
 // Skills Tools
 registerTool({

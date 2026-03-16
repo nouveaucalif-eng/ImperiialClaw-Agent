@@ -32,16 +32,17 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
     // Show typing status
     await ctx.replyWithChatAction(respondWithVoice ? 'record_voice' : 'typing');
     
-    const response = await runAgent(userId, text);
+    const agentResponse = await runAgent(userId, text);
+    const responseText = agentResponse.content;
     
-    if (!response) {
+    if (!responseText) {
       await ctx.reply("Je n'ai pas pu générer de réponse.");
       return;
     }
 
     if (respondWithVoice || text.toLowerCase().includes("réponds en vocal") || text.toLowerCase().includes("parle-moi")) {
       try {
-        const audioPath = await textToSpeech(response);
+        const audioPath = await textToSpeech(responseText, agentResponse.voice);
         await ctx.replyWithVoice(new InputFile(audioPath));
         
         // Cleanup temp file
@@ -50,10 +51,10 @@ async function processUserMessage(userId: string, text: string, ctx: any, respon
         }
       } catch (ttsError) {
         console.error('❌ TTS Error details:', ttsError);
-        await ctx.reply(response); // Fallback to text if TTS fails
+        await ctx.reply(responseText); // Fallback to text if TTS fails
       }
     } else {
-      await ctx.reply(response);
+      await ctx.reply(responseText);
     }
   } catch (error) {
     console.error('❌ Bot error:', error);

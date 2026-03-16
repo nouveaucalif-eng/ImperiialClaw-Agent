@@ -4,10 +4,10 @@ import fs from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 
-export async function textToSpeech(text: string): Promise<string> {
+export async function textToSpeech(text: string, voiceId?: string): Promise<string> {
   try {
     const tempPath = path.join(tmpdir(), `tts_${Date.now()}.mp3`);
-    const voice = env.EDGE_TTS_VOICE || 'fr-FR-EloiseNeural';
+    const voice = voiceId || env.EDGE_TTS_VOICE || 'fr-FR-EloiseNeural';
     
     // Nettoyage du texte pour éviter que la voix ne lise les caractères spéciaux (Markdown)
     const cleanedText = text
@@ -18,7 +18,7 @@ export async function textToSpeech(text: string): Promise<string> {
       .replace(/`/g, '')   // Supprime les backticks
       .trim();
 
-    console.log(`🎙️ Generating Edge TTS voice (Eloise) for text: "${cleanedText.substring(0, 30)}..."`);
+    console.log(`🎙️ Generating Edge TTS voice (${voice}) for text: "${cleanedText.substring(0, 30)}..."`);
     
     const tts = new EdgeTTS(cleanedText, voice, {
       rate: '+0%',
@@ -38,5 +38,3 @@ export async function textToSpeech(text: string): Promise<string> {
     throw new Error('Erreur lors de la génération de la voix Microsoft.');
   }
 }
-
-
