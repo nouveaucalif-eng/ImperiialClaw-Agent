@@ -7,6 +7,7 @@ import { tmpdir } from 'os';
 export async function textToSpeech(text: string): Promise<string> {
   try {
     const tempPath = path.join(tmpdir(), `tts_${Date.now()}.mp3`);
+    console.log(`🎙️ Generating voice for text: "${text.substring(0, 30)}..." using VoiceID: ${env.ELEVENLABS_VOICE_ID}`);
     
     // ElevenLabs API request
     const response = await axios({
@@ -28,11 +29,16 @@ export async function textToSpeech(text: string): Promise<string> {
       responseType: 'arraybuffer',
     });
 
-    // Save audio to temp file
+    console.log(`✅ Voice generated successfully! Saving to ${tempPath}`);
     fs.writeFileSync(tempPath, response.data);
     return tempPath;
-  } catch (error) {
-    console.error('❌ ElevenLabs TTS error:', error);
+  } catch (error: any) {
+    if (error.response) {
+      console.error('❌ ElevenLabs API error:', Buffer.from(error.response.data).toString());
+    } else {
+      console.error('❌ Transcription error:', error.message);
+    }
     throw new Error('Erreur lors de la génération de la voix.');
   }
 }
+
