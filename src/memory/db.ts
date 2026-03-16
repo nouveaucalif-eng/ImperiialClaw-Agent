@@ -7,9 +7,11 @@ let serviceAccount;
 
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    // Nettoyage : on enlève les espaces ou retours à la ligne éventuels autour du JSON
+    const cleanJson = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+    serviceAccount = JSON.parse(cleanJson);
   } catch (e) {
-    console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT env variable');
+    console.error('❌ Erreur de lecture du JSON Firebase :', e instanceof Error ? e.message : String(e));
   }
 } else {
   const serviceAccountPath = path.resolve(process.cwd(), 'firebase-credentials.json');
