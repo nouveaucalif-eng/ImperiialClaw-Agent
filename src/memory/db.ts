@@ -3,12 +3,23 @@ import path from 'path';
 import fs from 'fs';
 
 // Initialize Firebase Admin
-const serviceAccountPath = path.resolve(process.cwd(), 'firebase-credentials.json');
 let serviceAccount;
-try {
-  serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-} catch (e) {
-  console.warn('Could not read firebase-credentials.json, fallback to default credentials');
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch (e) {
+    console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT env variable');
+  }
+} else {
+  const serviceAccountPath = path.resolve(process.cwd(), 'firebase-credentials.json');
+  try {
+    if (fs.existsSync(serviceAccountPath)) {
+      serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('Could not read firebase-credentials.json fallback');
+  }
 }
 
 if (!admin.apps.length) {
