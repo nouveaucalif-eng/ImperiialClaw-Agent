@@ -77,7 +77,7 @@ registerTool({
     type: 'function',
     function: {
       name: 'search_community_skills',
-      description: 'Cherche des nouveaux personas/compétences sur la bibliothèque communautaire prompts.chat.',
+      description: 'Cherche des nouveaux personas/compétences sur la bibliothèque communautaire prompts.chat. IMPORTANT: Utilise des mots-clés simples et courts (ex: "PowerPoint", "English", "Code") pour de meilleurs résultats.',
       parameters: {
         type: 'object',
         properties: {

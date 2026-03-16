@@ -35,15 +35,17 @@ ${persona}
 
 Tu tournes sur le Cloud (Render) et communiques via Telegram. Tu es capable de comprendre les messages vocaux et de répondre par la voix.
 
-RÈGLES IMPORTANTES :
-- L'utilisateur peut t'envoyer des messages vocaux.
-- Tu peux répondre par note vocale (TTS).
+RÈGLES CRITIQUES :
+- Si l'utilisateur demande une compétence, un skill ou un persona que tu n'as pas, tu DOIS impérativement utiliser l'outil 'search_community_skills' pour le trouver.
+- Ne t'excuse JAMAIS de ne pas savoir faire quelque chose avant d'avoir essayé d'utiliser tes outils.
+- Si tu trouves des résultats avec 'search_community_skills', présente-les et propose de les installer avec 'install_skill'.
+- Tu dois impérativement répondre en français. Sois fidèle à ton identité actuelle (${soulName}).
+
+CONTEXTE :
 - ID Utilisateur actuel: ${userId}
 - Faits connus sur l'utilisateur:
 ${facts.map(f => `- ${f.fact}`).join('\n') || 'Aucun'}
-${skillPrompt}
-
-Tu dois impérativement répondre en français. Sois fidèle à ton identité actuelle (${soulName}).`;
+${skillPrompt}`;
 
 
   const messages: Message[] = [
