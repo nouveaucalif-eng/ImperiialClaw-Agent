@@ -30,23 +30,29 @@ export async function runAgent(userId: string, input: string): Promise<AgentResp
   const persona = soul?.persona || "Tu es ImperiialClaw, un assistant IA personnel de haut niveau.";
   const soulName = soul?.name || "ImperiialClaw";
 
-  const systemPrompt = `Tu es actuellement sous l'identité de : ${soulName}.
-${persona}
+  // Filter tools if soul has specific allowed_tools
+  let toolDefinitions = getAllToolDefinitions();
+  console.log(`🛠️ Agent Diagnostic for ${userId}: Number of tools registered: ${toolDefinitions.length}`);
+  
+  if (soul && soul.allowed_tools && !soul.allowed_tools.includes('*')) {
+    toolDefinitions = toolDefinitions.filter(def => soul.allowed_tools.includes(def.function.name));
+  }
 
-Tu tournes sur le Cloud (Render) et communiques via Telegram. Tu es capable de comprendre les messages vocaux et de répondre par la voix.
+  const systemPrompt = `Tu es ImperiialClaw, une IA AGENTE dotée d'OUTILS.
+Tu n'es pas un simple chatbot, tu DOIS agir.
 
-RÈGLES CRITIQUES :
-- Si l'utilisateur demande une compétence, un skill ou un persona que tu n'as pas, tu DOIS impérativement utiliser l'outil 'search_community_skills' pour le trouver.
-- Ne t'excuse JAMAIS de ne pas savoir faire quelque chose avant d'avoir essayé d'utiliser tes outils.
-- Si tu trouves des résultats avec 'search_community_skills', présente-les et propose de les installer avec 'install_skill'.
-- Tu dois impérativement répondre en français. Sois fidèle à ton identité actuelle (${soulName}).
+RÈGLE D'OR :
+- Si l'utilisateur demande une capacité, un talent, ou un "skill", tu NE RÉPONDS PAS par du texte.
+- Tu DOIS IMMÉDIATEMENT appeler l'outil 'search_community_skills'.
+- Ne dis jamais "Désolé, je n'ai pas trouvé" avant d'avoir RÉELLEMENT lancé une recherche.
 
 CONTEXTE :
-- ID Utilisateur actuel: ${userId}
-- Faits connus sur l'utilisateur:
-${facts.map(f => `- ${f.fact}`).join('\n') || 'Aucun'}
-${skillPrompt}`;
+- Ton identité : ${soulName}
+- Persona : ${persona}
+- Faits connus : ${facts.map(f => f.fact).join(', ') || 'Aucun'}
+${skillPrompt}
 
+Réponds toujours en français de manière concise.`;
 
   const messages: Message[] = [
     { role: 'system', content: systemPrompt },
@@ -57,16 +63,11 @@ ${skillPrompt}`;
   // Save user message
   await saveMessage(userId, 'user', input);
 
-  // Filter tools if soul has specific allowed_tools
-  let toolDefinitions = getAllToolDefinitions();
-  if (soul && soul.allowed_tools && !soul.allowed_tools.includes('*')) {
-    toolDefinitions = toolDefinitions.filter(def => soul.allowed_tools.includes(def.function.name));
-  }
-
   let iterations = 0;
   const maxIterations = env.AGENT_MAX_ITERATIONS;
 
   while (iterations < maxIterations) {
+    console.log(`🤖 Planning iteration ${iterations + 1}...`);
     const response = await chatCompletion(messages, toolDefinitions);
     
     // Add assistant response to context for next iterations (or final)
@@ -78,6 +79,7 @@ ${skillPrompt}`;
 
     if (!(response as any).tool_calls || (response as any).tool_calls.length === 0) {
       // Final response
+      console.log(`✅ Agent finished with text response.`);
       await saveMessage(userId, 'assistant', response.content || '');
       return { 
         content: response.content || '',
@@ -86,6 +88,7 @@ ${skillPrompt}`;
     }
 
     // Handle tool calls
+    console.log(`🔧 Tool calls detected: ${(response as any).tool_calls.map((tc: any) => tc.function.name).join(', ')}`);
     for (const toolCall of (response as any).tool_calls) {
       const tool = getTool(toolCall.function.name);
       let result: string;
@@ -93,6 +96,7 @@ ${skillPrompt}`;
       if (tool) {
         try {
           const args = JSON.parse(toolCall.function.arguments);
+          console.log(`🛠️ Executing ${toolCall.function.name} with args:`, args);
           result = await tool.handler(args, userId);
         } catch (e) {
           result = `Error executing tool: ${e instanceof Error ? e.message : String(e)}`;

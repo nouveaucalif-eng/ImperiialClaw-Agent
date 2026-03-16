@@ -35,7 +35,15 @@ export async function chatCompletion(messages: Message[], tools?: ToolDefinition
       tools: tools as any,
       tool_choice: 'auto',
     });
-    return response.choices[0].message;
+    
+    const choice = response.choices[0].message;
+    if (choice.tool_calls) {
+      console.log(`📡 Groq returned ${choice.tool_calls.length} tool calls.`);
+    } else {
+      console.log(`📡 Groq returned text response: "${choice.content?.substring(0, 50)}..."`);
+    }
+    
+    return choice;
   } catch (error) {
     console.error('⚠️ Groq error, attempting fallback to OpenRouter:', error);
     
