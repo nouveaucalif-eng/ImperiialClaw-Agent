@@ -77,7 +77,7 @@ registerTool({
     type: 'function',
     function: {
       name: 'generate_powerpoint',
-      description: 'Génère un véritable fichier PowerPoint (.pptx) de haute qualité avec plusieurs slides.',
+      description: 'Génère un véritable fichier PowerPoint (.pptx). IMPORTANT: À n\'utiliser QU\'APRÈS la phase de conceptualisation et de validation du plan avec l\'utilisateur.',
       parameters: {
         type: 'object',
         properties: {
