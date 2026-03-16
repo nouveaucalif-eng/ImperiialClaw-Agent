@@ -303,9 +303,8 @@ registerTool({
     },
   },
   handler: async (args: any) => {
-    // This tool is a macro that prepares the environment
-    return `🚀 Projet "${args.name}" initialisé dans ma zone de travail. 
-Je suis prêt à écrire le code. Quelle page souhaites-tu que je conçoive en premier ? (Je recommande de commencer par le composant App.tsx avec un design system Tailwind).`;
+    return `🚀 Projet "${args.name}" initialisé. L'environnement est prêt (Vite+React+Tailwind). 
+ARRÊTE-TOI ICI et présente ton plan d'architecture/design à l'utilisateur avant de coder.`;
   },
 });
 

@@ -63,7 +63,9 @@ CONTEXTE :
 - Faits : ${facts.map(f => f.fact).join(', ') || 'Aucun'}
 ${skillPrompt}
 
-Ton objectif est de "mettre le paquet" sur chaque création. Chaque pixel, chaque ligne de code doit transpirer l'excellence. Réponds toujours en Français.`;
+Ton objectif est de "mettre le paquet" sur chaque création. Chaque pixel, chaque ligne de code doit transpirer l'excellence.
+IMPORTANT : Après une action majeure (comme 'create_web_project'), tu DOIS t'arrêter et demander l'avis de l'utilisateur sur le plan de conception. Ne fais pas 10 tool calls à la suite sans parler.
+Réponds toujours en Français.`;
 
     const messages: Message[] = [
       { role: 'system', content: systemPrompt },
