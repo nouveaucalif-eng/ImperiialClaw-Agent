@@ -4,6 +4,8 @@ import { getAllToolDefinitions, getTool } from '../tools/registry.js';
 import { getHistory, saveMessage, getFacts, getActiveSkill, getActiveSoul } from '../memory/db.js';
 import { readSkillContent } from '../tools/skill_manager.js';
 import { loadSoul } from '../tools/soul_manager.js';
+import fs from 'fs';
+import path from 'path';
 
 export interface AgentResponse {
   content: string;
@@ -24,9 +26,15 @@ export async function runAgent(userId: string, input: string): Promise<AgentResp
     
     let skillPrompt = "";
     if (activeSkillName) {
-      const content = readSkillContent(activeSkillName);
-      if (content) {
-        skillPrompt = `\n\nCOMPÉTENCE ACTIVE (SKILL) :\nTu as acquis la compétence suivante :\n${content}`;
+      const skillsDir = path.join(process.cwd(), 'skills');
+      const skillPath = path.join(skillsDir, activeSkillName);
+      if (fs.existsSync(skillPath)) {
+        const content = readSkillContent(activeSkillName);
+        if (content) {
+          skillPrompt = `\n\nCOMPÉTENCE ACTIVE (SKILL) :\nTu as acquis la compétence suivante :\n${content}`;
+        }
+      } else {
+        console.warn(`⚠️ Skill file not found: ${activeSkillName}. Proceeding without it.`);
       }
     }
     
