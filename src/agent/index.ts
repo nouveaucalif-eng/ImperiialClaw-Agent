@@ -54,7 +54,7 @@ export async function runAgent(
     }
 
     const currentFiles = fs.readdirSync(process.cwd());
-    const diskStatus = `\nÉTAT RÉEL DU DISQUE DUR (CWD) :\nFichiers/Dossiers présents : ${currentFiles.join(', ')}`;
+    const diskStatus = `\nÉTAT RÉEL DU DISQUE (VÉRIFIÉ) :\nFichiers/Dossiers présents : ${currentFiles.join(', ')}`;
 
     const systemPrompt = `Tu es ImperiialClaw OS, une IA AGENTE MAÎTRE ARCHITECTE dotée de POUVOIRS D'INGÉNIERIE RÉELS.
 Tu ne te contentes pas de parler, tu CONSTRUIS le futur.
@@ -76,7 +76,7 @@ RÈGLES D'OR DE L'ARCHITECTE :
 IMPORTANT : 
 - Utilise EXCLUSIVEMENT l'interface technique de l'API pour appeler les outils.
 - NE PAS écrire de code dans des blocs markdown (fences) si c'est pour créer un fichier. Utilise l'outil 'write_file'.
-- Si tu ne vois pas un dossier dans l'ÉTAT RÉEL DU DISQUE ci-dessous, c'est qu'il n'existe PAS, même si tu as dit l'avoir créé plus haut.
+- Si tu ne vois pas un dossier dans l'ÉTAT RÉEL DU DISQUE ci-dessous, c'est qu'il n'existe PAS.
 
 CONTEXTE :
 - Identité : ${soulName}
@@ -114,39 +114,51 @@ Réponds toujours en Français.`;
       let content = response.content || '';
       let toolCalls = (response as any).tool_calls || [];
 
-      // --- SAFETY PARSER: Detect manual XML-like tool calls in content ---
+      // --- SAFETY PARSER 1: Detect manual XML-like tool calls ---
       if (content.includes('<function/')) {
-        console.log("⚠️ Manual XML tool calls detected in content. Parsing...");
-        // More robust regex: matches <function/name{params}>content</function> 
-        // OR <function/name>{params}</function>
+        console.log("⚠️ Manual XML tool calls detected. Parsing...");
         const regex = /<function\/(\w+)([^>]*)>([\s\S]*?)<\/function>/g;
         let match;
         while ((match = regex.exec(content)) !== null) {
           const name = match[1];
           const tagParams = match[2].trim();
           const betweenContent = match[3].trim();
-          
           let argsStr = tagParams || betweenContent;
-          
-          // Remove the XML tags from content so they don't show up to the user later
           content = content.replace(match[0], `[Exécution de ${name}...]`);
-          
           try {
             if (argsStr) {
-               // Simple JSON correction: if it doesn't start with {, add it
                if (!argsStr.startsWith('{')) argsStr = `{${argsStr}}`;
                const args = JSON.parse(argsStr);
                toolCalls.push({
-                 id: `manual_${Math.random().toString(36).substr(2, 9)}`,
+                 id: `manual_xml_${Math.random().toString(36).substr(2, 9)}`,
                  type: 'function',
                  function: { name, arguments: JSON.stringify(args) }
                });
             }
-          } catch (e) {
-            console.error(`❌ Failed to parse manual tool args for ${name}:`, argsStr);
-          }
+          } catch (e) { console.error(`❌ Failed to parse XML tool args:`, e); }
         }
       }
+
+      // --- SAFETY PARSER 2: Detect 'assistantcommentary' hallucinated format ---
+      if (content.includes('assistantcommentary to=functions.')) {
+        console.log("⚠️ assistantcommentary tool calls detected. Parsing...");
+        const regex = /assistantcommentary to=functions\.(\w+) json({[\s\S]*?})[\s\S]*?functions\.\1assistantcommentary/g;
+        let match;
+        while ((match = regex.exec(content)) !== null) {
+          const name = match[1];
+          const argsStr = match[2];
+          content = content.replace(match[0], `[Auto-fix: Exécution de ${name}]`);
+          try {
+            const args = JSON.parse(argsStr);
+            toolCalls.push({
+              id: `manual_comm_${Math.random().toString(36).substr(2, 9)}`,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) }
+            });
+          } catch (e) { console.error(`❌ Failed to parse commentary tool args:`, e); }
+        }
+      }
+      // ------------------------------------------------------------------
       // ------------------------------------------------------------------
 
       // Add assistant response to context

@@ -307,8 +307,7 @@ registerTool({
     if (!fs.existsSync(projectPath)) {
       fs.mkdirSync(projectPath, { recursive: true });
     }
-    return `🚀 Dossier "${args.name}" créé physiquement à l'emplacement : ${projectPath}. 
-L'environnement est prêt. ARRÊTE-TOI ICI et demande à l'utilisateur si tu dois installer les dépendances via 'run_command' ou commencer à écrire les fichiers de config.`;
+    return `🚀 Dossier "${args.name}" créé physiquement à l'emplacement : ${projectPath}. Tu peux maintenant enchaîner avec 'write_file' ou 'run_command' pour configurer le projet.`;
   },
 });
 
