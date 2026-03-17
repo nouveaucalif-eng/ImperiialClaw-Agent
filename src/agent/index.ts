@@ -21,10 +21,16 @@ export async function runAgent(
   console.log(`🚀 runAgent called for user ${userId} with input: "${input.substring(0, 50)}..."`);
   try {
     // 1. Prepare context
-    const history = await getHistory(userId);
+    let history = await getHistory(userId);
     const facts = await getFacts(userId);
     const activeSkillName = await getActiveSkill(userId);
     const activeSoulId = await getActiveSoul(userId) || 'master';
+    
+    // TRUNCATE HISTORY TO SAVE TOKENS (Keep last 15 messages)
+    if (history.length > 15) {
+      console.log(`✂️ Trimming history for ${userId} (from ${history.length} to 15 messages)`);
+      history = history.slice(-15);
+    }
     
     const soul = loadSoul(activeSoulId);
     
@@ -59,24 +65,21 @@ export async function runAgent(
     const systemPrompt = `Tu es ImperiialClaw OS, une IA AGENTE MAÎTRE ARCHITECTE dotée de POUVOIRS D'INGÉNIERIE RÉELS.
 Tu ne te contentes pas de parler, tu CONSTRUIS le futur.
 
-RÈGLES D'OR DE L'ARCHITECTE :
-1. DÉVELOPPEMENT WEB/APP PREMIUM : 
-   - Tu utilises Vite, React et Tailwind CSS pour créer des interfaces dignes des meilleurs studios mondiaux.
-   - Tes designs DOIVENT inclure : Glassmorphism, Bento Grids, Animations Fluides (via Framer Motion), et une Typographie massive et élégante.
-   - Utilise 'write_file' pour créer ton code et 'run_command' pour installer des packages si nécessaire.
-2. MÉTHODE DE CONCEPTION :
-   - Pour tout projet complexe (Web ou PPT), procède TOUJOURS en deux temps :
-     a. CONCEPTION : Propose une architecture, un design system et un plan d'action détaillé.
-     b. RÉALISATION : Après validation, déploie le code ou génère les fichiers.
+RÈGLES D'OR DE L'ARCHITECTE (STRICTES) :
+1. DÉVELOPPEMENT WEB/APP : 
+   - INTERDICTION de créer des scripts CDN ou du HTML statique basique. Tu construis des APPS MODERNES (React + Vite + Tailwind).
+   - Tes designs DOIVENT inclure : Glassmorphism (bg-white/10 backdrop-blur-md), Bento Grids, Animations Framer Motion, et Typographie "Massive".
+   - Utilise EXCLUSIVEMENT 'projectDir' dans tes outils pour ne pas polluer ton propre dossier système.
+2. DÉFENSE ANTI-MVP : 
+   - Si tu réponds "C'est fini" alors que le code est simple ou moche, tu as échoué. 
+   - Un projet "MaVitrinePro" DOIT avoir : un Header transparent, une section Hero avec des gradients animés, et une grille de services interactive.
 3. LOGICIELS & OUTILS :
-   - Tu PEUX générer des PowerPoint via 'generate_powerpoint'.
-   - Tu PEUX coder des applications entières via tes outils filesystem.
-   - Ne dis JAMAIS que tu es limité. Tu as un terminal et un accès aux fichiers.
+   - Tu as accès au terminal. Si un dossier n'existe pas dans l'ÉTAT RÉEL DU DISQUE, crée-le avec 'create_web_project'.
+   - Ne dis JAMAIS que tu es limité. 
 
 IMPORTANT : 
-- Utilise EXCLUSIVEMENT l'interface technique de l'API pour appeler les outils.
-- NE PAS écrire de code dans des blocs markdown (fences) si c'est pour créer un fichier. Utilise l'outil 'write_file'.
-- Si tu ne vois pas un dossier dans l'ÉTAT RÉEL DU DISQUE ci-dessous, c'est qu'il n'existe PAS.
+- Utilise l'interface technique de l'API.
+- Si le dossier de ton projet n'est pas listé ci-dessous, tu DOIS le créer avant d'écrire dedans.
 
 CONTEXTE :
 - Identité : ${soulName}
@@ -85,8 +88,7 @@ CONTEXTE :
 ${diskStatus}
 ${skillPrompt}
 
-Ton objectif est de "mettre le paquet" sur chaque création. Chaque pixel, chaque ligne de code doit transpirer l'excellence.
-RÈGLE D'ACTION : Une fois que l'utilisateur a validé un plan, NE PARLE PLUS inutilement. AGIS. Utilise tes 20-40 itérations pour construire le maximum de choses (fichiers, config, composants) d'une seule traite. On ne perd pas de temps en explications méthodologiques.
+RÈGLE D'ACTION : Une fois que l'utilisateur a validé un plan, NE PARLE PLUS inutilement. AGIS. Tu as 40 itérations : utilise-les pour coder TOUS les fichiers (App.tsx, index.css, components/*) d'une seule traite. On ne s'arrête pas avant d'avoir du WOW.
 Réponds toujours en Français.`;
 
     const messages: Message[] = [
@@ -142,20 +144,30 @@ Réponds toujours en Français.`;
       // --- SAFETY PARSER 2: Detect 'assistantcommentary' hallucinated format ---
       if (content.includes('assistantcommentary to=functions.')) {
         console.log("⚠️ assistantcommentary tool calls detected. Parsing...");
-        const regex = /assistantcommentary to=functions\.(\w+) json({[\s\S]*?})[\s\S]*?functions\.\1assistantcommentary/g;
+        // Match: assistantcommentary to=functions.NAME json{...}
+        // Note: We use a more relaxed regex and verify with JSON.parse
+        const regex = /assistantcommentary to=functions\.(\w+)\s+json(\{[\s\S]+?\})(?=assistant|$)/g;
         let match;
         while ((match = regex.exec(content)) !== null) {
           const name = match[1];
           const argsStr = match[2];
-          content = content.replace(match[0], `[Auto-fix: Exécution de ${name}]`);
+          console.log(`🔍 Found potential commentary call: ${name}`);
+          
           try {
-            const args = JSON.parse(argsStr);
+            // Try to fix common JSON truncation if any (very basic)
+            let cleanedArgs = argsStr.trim();
+            if (!cleanedArgs.endsWith('}')) cleanedArgs += '}';
+            
+            const args = JSON.parse(cleanedArgs);
             toolCalls.push({
               id: `manual_comm_${Math.random().toString(36).substr(2, 9)}`,
               type: 'function',
               function: { name, arguments: JSON.stringify(args) }
             });
-          } catch (e) { console.error(`❌ Failed to parse commentary tool args:`, e); }
+            content = content.replace(match[0], `[Auto-fix: Exécution de ${name}]`);
+          } catch (e) { 
+            console.error(`❌ Failed to parse commentary tool args for ${name}. Raw string: ${argsStr.substring(0, 50)}...`); 
+          }
         }
       }
       // ------------------------------------------------------------------

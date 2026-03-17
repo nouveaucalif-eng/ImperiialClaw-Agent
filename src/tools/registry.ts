@@ -198,66 +198,24 @@ registerTool({
     type: 'function',
     function: {
       name: 'write_file',
-      description: 'Crée ou modifie un fichier sur le disque. Utile pour coder des applications ou des scripts.',
+      description: 'Crée ou modifie un fichier sur le disque. IMPORTANT : Si tu travailles sur un projet (ex: MaVitrinePro), utilise le paramètre projectDir.',
       parameters: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'Chemin relatif du fichier (ex: ./src/App.tsx)' },
-          content: { type: 'string', description: 'Contenu complet du fichier' }
+          path: { type: 'string', description: 'Chemin relatif du fichier (ex: src/App.tsx)' },
+          content: { type: 'string', description: 'Contenu complet du fichier' },
+          projectDir: { type: 'string', description: 'Le dossier du projet (ex: MaVitrinePro). Optionnel.' }
         },
         required: ['path', 'content']
       },
     },
   },
   handler: async (args: any) => {
-    const fullPath = path.resolve(process.cwd(), args.path);
+    const baseDir = args.projectDir ? path.join(process.cwd(), args.projectDir) : process.cwd();
+    const fullPath = path.resolve(baseDir, args.path);
     await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.promises.writeFile(fullPath, args.content, 'utf8');
-    return `✅ Fichier écrit avec succès : ${args.path}`;
-  },
-});
-
-registerTool({
-  definition: {
-    type: 'function',
-    function: {
-      name: 'read_file',
-      description: 'Lit le contenu d\'un fichier sur le disque.',
-      parameters: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Chemin relatif du fichier' }
-        },
-        required: ['path']
-      },
-    },
-  },
-  handler: async (args: any) => {
-    const fullPath = path.resolve(process.cwd(), args.path);
-    if (!fs.existsSync(fullPath)) return `❌ Erreur : Le fichier ${args.path} n'existe pas.`;
-    return await fs.promises.readFile(fullPath, 'utf8');
-  },
-});
-
-registerTool({
-  definition: {
-    type: 'function',
-    function: {
-      name: 'list_dir',
-      description: 'Liste les fichiers et dossiers dans un répertoire.',
-      parameters: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Répertoire à lister (défaut: ".")' }
-        }
-      },
-    },
-  },
-  handler: async (args: any) => {
-    const dirPath = path.resolve(process.cwd(), args.path || '.');
-    if (!fs.existsSync(dirPath)) return `❌ Erreur : Le dossier ${args.path} n'existe pas.`;
-    const files = await fs.promises.readdir(dirPath, { withFileTypes: true });
-    return files.map(f => `${f.isDirectory() ? '[DIR]' : '[FILE]'} ${f.name}`).join('\n');
+    return `✅ Fichier écrit avec succès dans ${args.projectDir || 'racine'} : ${args.path}`;
   },
 });
 
@@ -266,11 +224,12 @@ registerTool({
     type: 'function',
     function: {
       name: 'run_command',
-      description: 'Exécute une commande système (npm install, git, etc.). À utiliser avec prudence.',
+      description: 'Exécute une commande système. IMPORTANT : Utilise projectDir pour exécuter DANS le dossier du projet (ex: npm install).',
       parameters: {
         type: 'object',
         properties: {
-          command: { type: 'string', description: 'La commande à exécuter' }
+          command: { type: 'string', description: 'La commande à exécuter' },
+          projectDir: { type: 'string', description: 'Le dossier où exécuter la commande (ex: MaVitrinePro). Optionnel.' }
         },
         required: ['command']
       },
@@ -278,7 +237,8 @@ registerTool({
   },
   handler: async (args: any) => {
     try {
-      const { stdout, stderr } = await execAsync(args.command);
+      const execOptions = args.projectDir ? { cwd: path.join(process.cwd(), args.projectDir) } : {};
+      const { stdout, stderr } = await execAsync(args.command, execOptions);
       return `STDOUT:\n${stdout}\n\nSTDERR:\n${stderr}`;
     } catch (e: any) {
       return `❌ Erreur d'exécution :\n${e.message}`;
@@ -308,6 +268,54 @@ registerTool({
       fs.mkdirSync(projectPath, { recursive: true });
     }
     return `🚀 Dossier "${args.name}" créé physiquement à l'emplacement : ${projectPath}. Tu peux maintenant enchaîner avec 'write_file' ou 'run_command' pour configurer le projet.`;
+  },
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'deploy_web_project',
+      description: 'Déploie un projet Web (Vite/React) sur Internet via Vercel. Retourne l\'URL publique du site.',
+      parameters: {
+        type: 'object',
+        properties: {
+          projectDir: { type: 'string', description: 'Le dossier du projet à déployer (ex: MaVitrinePro)' }
+        },
+        required: ['projectDir']
+      },
+    },
+  },
+  handler: async (args: any) => {
+    const vercelToken = process.env.VERCEL_TOKEN;
+    if (!vercelToken) {
+      return `❌ Échec du déploiement : La variable d'environnement VERCEL_TOKEN est absente du fichier .env.\nDemande à l'utilisateur de configurer son token Vercel.`;
+    }
+
+    try {
+      const projectPath = path.join(process.cwd(), args.projectDir);
+      if (!fs.existsSync(projectPath)) {
+         return `❌ Erreur : Le dossier ${args.projectDir} n'existe pas.`;
+      }
+
+      // Vercel project names must be lowercase and max 100 chars
+      const sanitizedProjectName = args.projectDir.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      
+      // We use npx vercel directly to avoid requiring a global install on the user's machine
+      const command = `npx vercel --prod --yes --token ${vercelToken} --name ${sanitizedProjectName}`;
+      const { stdout, stderr } = await execAsync(command, { cwd: projectPath });
+
+      // Vercel CLI usually outputs the production URL in standard output (or stderr sometimes)
+      const urlMatch = stdout.match(/https:\/\/[a-zA-Z0-9-]+\.vercel\.app/i) || stderr.match(/https:\/\/[a-zA-Z0-9-]+\.vercel\.app/i);
+      
+      if (urlMatch) {
+         return `✅ Déploiement réussi ! Le site est EN LIGNE à cette adresse : ${urlMatch[0]}`;
+      } else {
+         return `✅ Commande de déploiement exécutée, mais l'URL exacte n'a pas pu être extraite. Logs:\n${stdout}\n${stderr}`;
+      }
+    } catch (e: any) {
+      return `❌ Erreur lors du déploiement Vercel :\n${e.message}\nVerifie que le projet contient bien un package.json valide et qu'il compile sans erreur.`;
+    }
   },
 });
 

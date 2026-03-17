@@ -30,5 +30,16 @@
     "@types/node": "^20.16.5",
     "tsx": "^4.19.1",
     "typescript": "^5.5.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nouveaucalif-eng/ImperiialClaw-Agent.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nouveaucalif-eng/ImperiialClaw-Agent/issues"
+  },
+  "homepage": "https://github.com/nouveaucalif-eng/ImperiialClaw-Agent#readme"
 }
