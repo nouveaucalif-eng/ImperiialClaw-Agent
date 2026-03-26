@@ -1,4 +1,4 @@
-import { Bot, InputFile } from 'grammy';
+import { Bot, InputFile, GrammyError, HttpError } from 'grammy';
 import { env } from '../config/index.js';
 import { runAgent } from '../agent/index.js';
 import { transcribeAudio } from '../services/voice.js';
@@ -6,6 +6,20 @@ import { textToSpeech } from '../services/tts.js';
 import fs from 'fs';
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
+
+// Global error handler — prevents silent bot death
+bot.catch((err) => {
+  const ctx = err.ctx;
+  console.error(`❌ Error while handling update ${ctx.update.update_id}:`);
+  const e = err.error;
+  if (e instanceof GrammyError) {
+    console.error('  Grammy Error:', e.description);
+  } else if (e instanceof HttpError) {
+    console.error('  HTTP Error:', e);
+  } else {
+    console.error('  Unknown Error:', e);
+  }
+});
 
 // Global logging middleware
 bot.use(async (ctx, next) => {
@@ -154,6 +168,13 @@ export function startBot() {
     onStart: (botInfo) => {
       console.log(`🚀 ImperiialClaw is running as @${botInfo.username}`);
     },
+  }).catch((err) => {
+    console.error('💀 Bot polling crashed:', err);
+    console.log('🔄 Auto-restarting bot in 5 seconds...');
+    setTimeout(() => {
+      console.log('🔄 Restarting bot...');
+      startBot();
+    }, 5000);
   });
 }
 
