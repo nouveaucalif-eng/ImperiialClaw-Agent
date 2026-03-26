@@ -140,21 +140,29 @@ bot.on('message:voice', async (ctx) => {
   if (!userId) return;
 
   try {
+    // 1. Inform user
+    const statusMsg = await ctx.reply("⏳ Analyse de votre message vocal en cours...");
     await ctx.replyWithChatAction('record_voice');
     
-    // 1. Get file info from Telegram
+    // 2. Get file info from Telegram
     const file = await ctx.getFile();
     const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
 
-    // 2. Transcribe using our service
+    // 3. Transcribe using our service
+    console.log(`🎙️ Downloading voice from: ${fileUrl}`);
     const transcribedText = await transcribeAudio(fileUrl);
     
+    // Delete status message
+    await ctx.api.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
+
     if (!transcribedText || transcribedText.trim() === "") {
-        await ctx.reply("Je n'ai pas pu entendre ce que vous avez dit.");
+        await ctx.reply("Je n'ai pas pu décoder ce vocal. Peux-tu réessayer ou écrire ta demande ?");
         return;
     }
 
-    // 3. Process with voice response enabled
+    console.log(`📝 Transcribed: "${transcribedText}"`);
+
+    // 4. Process with voice response enabled
     await processUserMessage(userId, transcribedText, ctx, true);
   } catch (error) {
     console.error('❌ Voice processing error:', error);
