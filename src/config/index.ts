@@ -9,7 +9,7 @@ const envSchema = z.object({
   GROQ_API_KEY: z.string().trim().transform(v => v.replace(/^["']|["']$/g, '')),
   OPENROUTER_API_KEY: z.string().optional().transform(v => v?.trim().replace(/^["']|["']$/g, '')),
   OPENROUTER_MODEL: z.string().default('openrouter/auto'),
-  AGENT_MAX_ITERATIONS: z.string().transform(Number).default('15'),
+  AGENT_MAX_ITERATIONS: z.string().transform(Number).default('40'),
   ELEVENLABS_API_KEY: z.string().optional(),
   ELEVENLABS_VOICE_ID: z.string().optional(),
   EDGE_TTS_VOICE: z.string().default('fr-FR-EloiseNeural'), // More natural French female
