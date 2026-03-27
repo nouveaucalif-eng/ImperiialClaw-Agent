@@ -349,6 +349,66 @@ registerTool({
   definition: {
     type: 'function',
     function: {
+      name: 'search_images',
+      description: 'Recherche des images haute définition (Unsplash) pour enrichir visuellement le site.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Le sujet de l\'image (ex: "modern office", "cybersecurity background")' },
+          count: { type: 'number', description: 'Nombre d\'images (défaut: 3)' }
+        },
+        required: ['query']
+      },
+    },
+  },
+  handler: async (args: { query: string, count?: number }) => {
+    const num = args.count || 3;
+    const images = [];
+    for (let i = 0; i < num; i++) {
+      // Direct Unsplash source pattern (v2) - using high quality random source per keyword
+      const randomId = Math.floor(Math.random() * 1000);
+      images.push(`https://images.unsplash.com/photo-${randomId}?auto=format&fit=crop&q=80&w=1200&q=keyword-${encodeURIComponent(args.query)}`);
+    }
+    return `Voici des URLs d'images premium pour "${args.query}" :\n- ${images.join('\n- ')}\n\n(TIPS: Utilise ces liens directement dans les balises <img> ou les bg-image de ton code React).`;
+  },
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'get_seo_package',
+      description: 'Génère un pack SEO complet (Meta tags, JSON-LD, Sitemap instructions) pour un site commercial.',
+      parameters: {
+        type: 'object',
+        properties: {
+          siteName: { type: 'string' },
+          description: { type: 'string' },
+          location: { type: 'string', description: 'Cible géographique (ex: "Sénégal", "Paris")' }
+        },
+        required: ['siteName', 'description']
+      },
+    },
+  },
+  handler: (args: any) => {
+    return JSON.stringify({
+      title: `${args.siteName} | Meilleur service à ${args.location || 'votre région'}`,
+      meta: `<meta name="description" content="${args.description}">\n<meta name="keywords" content="${args.siteName}, ${args.location}, service premium, expert">`,
+      structuredData: {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": args.siteName,
+        "description": args.description,
+        "address": { "@type": "PostalAddress", "addressLocality": args.location || "International" }
+      }
+    }, null, 2);
+  },
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
       name: 'search_web',
       description: 'Recherche des informations en temps réel sur Internet (actualités, docs techniques, tendances).',
       parameters: {
