@@ -344,3 +344,46 @@ registerTool({
     });
   },
 });
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
+      name: 'search_web',
+      description: 'Recherche des informations en temps réel sur Internet (actualités, docs techniques, tendances).',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Le sujet de la recherche (ex: "dernier cri design web 2024", "tuto framer motion")' }
+        },
+        required: ['query']
+      },
+    },
+  },
+  handler: async (args: { query: string }) => {
+    try {
+      // Use DuckDuckGo HTML version (lite) as it's easier to scrape simply without an API key
+      const axios = (await import('axios')).default;
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(args.query)}`;
+      const { data } = await axios.get(searchUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      
+      // Basic extraction of snippets (DDG Lite HTML structure)
+      // We look for 'result__snippet' class which is present in the Lite version
+      const snippets: string[] = [];
+      const regex = /<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+      let match;
+      let count = 0;
+      while ((match = regex.exec(data)) !== null && count < 5) {
+        snippets.push(match[1].replace(/<[^>]+>/g, '').trim()); // Clean HTML tags
+        count++;
+      }
+
+      if (snippets.length === 0) return "Aucun résultat trouvé pour cette recherche.";
+      return `Résultats de recherche pour "${args.query}" :\n\n- ${snippets.join('\n- ')}`;
+    } catch (e: any) {
+      return `❌ Erreur de recherche : ${e.message}`;
+    }
+  },
+});
