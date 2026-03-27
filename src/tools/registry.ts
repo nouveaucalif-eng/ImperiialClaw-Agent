@@ -264,10 +264,19 @@ registerTool({
   },
   handler: async (args: any) => {
     const projectPath = path.join(process.cwd(), args.name);
-    if (!fs.existsSync(projectPath)) {
-      fs.mkdirSync(projectPath, { recursive: true });
+    try {
+      if (fs.existsSync(projectPath)) {
+        return `⚠️ Le dossier ${args.name} existe déjà. S'il n'est pas configuré, exécute des commandes manuellement via run_command.`;
+      }
+      
+      const { stdout } = await execAsync(`npx --yes create-vite@latest ${args.name} --template react`, { cwd: process.cwd() });
+      await execAsync(`npm install && npm install framer-motion lucide-react && npm install -D tailwindcss postcss autoprefixer`, { cwd: projectPath });
+      await execAsync(`npx tailwindcss init -p`, { cwd: projectPath });
+      
+      return `🚀 Succès ! Le projet React/Vite "${args.name}" est créé ! TailwindCSS, Framer Motion et Lucide-React sont installés. Tu peux utiliser 'write_file' pour modifier 'index.html', 'tailwind.config.js', 'src/index.css' et 'src/App.jsx'.`;
+    } catch (e: any) {
+      return `❌ Erreur lors de la création du projet : ${e.message}`;
     }
-    return `🚀 Dossier "${args.name}" créé physiquement à l'emplacement : ${projectPath}. Tu peux maintenant enchaîner avec 'write_file' ou 'run_command' pour configurer le projet.`;
   },
 });
 
