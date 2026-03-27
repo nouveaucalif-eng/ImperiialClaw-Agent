@@ -275,6 +275,34 @@ registerTool({
   definition: {
     type: 'function',
     function: {
+      name: 'check_code_compilation',
+      description: 'Vérifie si le code d\'un projet React/Vite compile sans erreur de syntaxe (crucial avant déploiement).',
+      parameters: {
+        type: 'object',
+        properties: {
+          projectDir: { type: 'string', description: 'Le dossier du projet (ex: MaVitrinePro)' }
+        },
+        required: ['projectDir']
+      },
+    },
+  },
+  handler: async (args: { projectDir: string }) => {
+    try {
+      const projectPath = path.join(process.cwd(), args.projectDir);
+      if (!fs.existsSync(projectPath)) return `❌ Erreur : Le dossier ${args.projectDir} n'existe pas.`;
+      
+      const { stdout, stderr } = await execAsync('npm run build', { cwd: projectPath });
+      return `✅ Compilation réussie ! Aucun bug détecté. Le code est prêt pour Vercel.\nLogs: ${stdout.substring(0, 150)}...`;
+    } catch (e: any) {
+      return `❌ ERREUR DE COMPILATION/SYNTAXE DÉTECTÉE :\n${e.message}\n${e.stderr || ''}\nCorrige imperativement ton code (Vérifie tes imports et tes balises XML) avant de redéployer.`;
+    }
+  },
+});
+
+registerTool({
+  definition: {
+    type: 'function',
+    function: {
       name: 'deploy_web_project',
       description: 'Déploie un projet Web (Vite/React) sur Internet via Vercel. Retourne l\'URL publique du site.',
       parameters: {
